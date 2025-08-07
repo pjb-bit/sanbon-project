@@ -1,0 +1,52 @@
+
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>청소당번 뽑기</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+  <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <div class="card shadow-lg" style="max-width: 500px; width: 100%;">
+      <div class="card-header bg-gradient text-white text-center py-4">
+        <h1 class="card-title mb-0">
+          <i class="fas fa-broom me-2"></i>청소당번 뽑기
+        </h1>
+      </div>
+      <div class="card-body text-center p-5">
+        <p class="lead text-muted mb-4">
+          <i class="fas fa-users me-2"></i>1번부터 25번까지 중에서 5명을 뽑습니다
+        </p>
+        
+        <button id="drawButton" class="btn btn-lg btn-gradient px-5 py-3">
+          <i class="fas fa-dice me-2"></i>뽑기 시작!
+        </button>
+        
+        <div id="result" class="mt-4 d-none">
+          <h3 class="text-primary mb-3">
+            <i class="fas fa-star me-2"></i>선택된 청소당번
+          </h3>
+          <div id="selectedNumbers" class="d-flex flex-wrap justify-content-center gap-3"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- SweetAlert2 JS -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="script.js"></script>
+</body>
+
+</html>
