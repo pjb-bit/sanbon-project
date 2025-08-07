@@ -1,149 +1,182 @@
 
 document.addEventListener('DOMContentLoaded', function() {
-    const drawButton = document.getElementById('drawButton');
-    const selectedNumbers = document.getElementById('selectedNumbers');
-    const resultContainer = document.getElementById('result');
+    const dateInput = document.getElementById('meal-date');
+    const searchBtn = document.getElementById('search-btn');
+    const loadingDiv = document.getElementById('loading');
+    const mealInfoDiv = document.getElementById('meal-info');
+    const errorDiv = document.getElementById('error-message');
+    const mealDateDisplay = document.getElementById('meal-date-display');
+
+    // 오늘 날짜를 기본값으로 설정
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0];
+    dateInput.value = formattedToday;
+
+    // 검색 버튼 클릭 이벤트
+    searchBtn.addEventListener('click', searchMealInfo);
     
-    drawButton.addEventListener('click', function() {
-        // SweetAlert2로 확인 대화상자
-        Swal.fire({
-            title: '청소당번을 뽑으시겠습니까?',
-            text: '1번부터 25번까지 중에서 5명을 무작위로 선택합니다!',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: '네, 뽑겠습니다!',
-            cancelButtonText: '취소',
-            reverseButtons: true,
-            customClass: {
-                confirmButton: 'btn btn-primary me-2',
-                cancelButton: 'btn btn-secondary'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                startDrawing();
-            }
-        });
+    // 엔터키로도 검색 가능
+    dateInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchMealInfo();
+        }
     });
-    
-    function startDrawing() {
-        // 로딩 알림
-        Swal.fire({
-            title: '추첨 중...',
-            html: '<div class="loading-spinner"></div><br>청소당번을 선택하고 있습니다!',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            showConfirmButton: false,
-            timer: 2000
-        }).then(() => {
-            performDraw();
-        });
-    }
-    
-    function performDraw() {
-        // 1부터 25까지의 숫자 배열 생성
-        const numbers = [];
-        for (let i = 1; i <= 25; i++) {
-            numbers.push(i);
+
+    // 페이지 로드 시 오늘 급식 정보 자동 조회
+    searchMealInfo();
+
+    async function searchMealInfo() {
+        const selectedDate = dateInput.value;
+        
+        if (!selectedDate) {
+            alert('날짜를 선택해주세요.');
+            return;
         }
+
+        // 날짜 형식 변환 (YYYY-MM-DD -> YYYYMMDD)
+        const formattedDate = selectedDate.replace(/-/g, '');
         
-        // 랜덤으로 5개 숫자 선택
-        const selected = [];
-        for (let i = 0; i < 5; i++) {
-            const randomIndex = Math.floor(Math.random() * numbers.length);
-            selected.push(numbers[randomIndex]);
-            numbers.splice(randomIndex, 1);
-        }
-        
-        // 선택된 숫자들을 정렬
-        selected.sort((a, b) => a - b);
-        
-        // 결과 표시
-        displayResults(selected);
-    }
-    
-    function displayResults(numbers) {
-        // 기존 결과 지우기
-        selectedNumbers.innerHTML = '';
-        resultContainer.classList.remove('d-none');
-        
-        // 성공 메시지
-        Swal.fire({
-            title: '추첨 완료!',
-            text: '청소당번이 선정되었습니다!',
-            icon: 'success',
-            timer: 1500,
-            showConfirmButton: false
-        });
-        
-        // 애니메이션과 함께 숫자 표시
-        numbers.forEach((number, index) => {
-            setTimeout(() => {
-                const numberElement = document.createElement('div');
-                numberElement.className = 'number-badge';
-                numberElement.textContent = number + '번';
-                
-                // 마지막 숫자에는 특별한 효과
-                if (index === numbers.length - 1) {
-                    numberElement.classList.add('pulse-animation');
-                }
-                
-                selectedNumbers.appendChild(numberElement);
-                
-                // 사운드 효과 (선택적)
-                playNotificationSound();
-                
-            }, index * 300);
-        });
-        
-        // 모든 숫자가 표시된 후 축하 메시지
-        setTimeout(() => {
-            showCelebration(numbers);
-        }, numbers.length * 300 + 500);
-    }
-    
-    function showCelebration(numbers) {
-        const numbersText = numbers.map(n => n + '번').join(', ');
-        
-        Swal.fire({
-            title: '🎉 축하합니다! 🎉',
-            html: `
-                <div class="mb-3">
-                    <h4 class="text-primary">선정된 청소당번</h4>
-                    <div class="alert alert-info">
-                        <strong>${numbersText}</strong>
-                    </div>
-                </div>
-                <p class="text-muted">수고하세요! 깨끗한 교실을 만들어주세요! ✨</p>
-            `,
-            icon: 'success',
-            confirmButtonText: '다시 뽑기',
-            showCancelButton: true,
-            cancelButtonText: '완료',
-            customClass: {
-                confirmButton: 'btn btn-primary me-2',
-                cancelButton: 'btn btn-secondary'
-            },
-            buttonsStyling: false
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // 결과 숨기고 다시 뽑기 준비
-                resultContainer.classList.add('d-none');
-                selectedNumbers.innerHTML = '';
-            }
-        });
-    }
-    
-    function playNotificationSound() {
-        // 브라우저 지원 확인 후 오디오 재생 (선택적)
+        showLoading();
+        hideResults();
+        hideError();
+
         try {
-            const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBjZmAzSO0fdSDw/');
-            audio.volume = 0.1;
-            audio.play().catch(() => {
-                // 오디오 재생 실패시 무시
-            });
-        } catch (e) {
-            // 오디오 생성 실패시 무시
+            const mealData = await fetchMealData(formattedDate);
+            displayMealInfo(mealData, selectedDate);
+        } catch (error) {
+            console.error('급식 정보 조회 중 오류:', error);
+            showError();
         }
+    }
+
+    async function fetchMealData(date) {
+        const API_URL = `https://open.neis.go.kr/hub/mealServiceDietInfo`;
+        const params = new URLSearchParams({
+            ATPT_OFCDC_SC_CODE: 'J10',  // 경기도교육청
+            SD_SCHUL_CODE: '7530079',   // 산본고등학교
+            MLSV_YMD: date
+        });
+
+        // CORS 프록시 사용
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const fullUrl = `${proxyUrl}${encodeURIComponent(`${API_URL}?${params}`)}`;
+
+        const response = await fetch(fullUrl);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const xmlText = await response.text();
+        return parseXMLData(xmlText);
+    }
+
+    function parseXMLData(xmlText) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        
+        // 오류 체크
+        const errorElements = xmlDoc.getElementsByTagName('RESULT');
+        if (errorElements.length > 0) {
+            const errorCode = errorElements[0].getElementsByTagName('CODE')[0]?.textContent;
+            if (errorCode !== 'INFO-000') {
+                throw new Error('급식 정보가 없습니다.');
+            }
+        }
+
+        const rows = xmlDoc.getElementsByTagName('row');
+        const meals = {
+            breakfast: [],
+            lunch: [],
+            dinner: []
+        };
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const mealCode = row.getElementsByTagName('MMEAL_SC_CODE')[0]?.textContent;
+            const dishName = row.getElementsByTagName('DDISH_NM')[0]?.textContent;
+            
+            if (dishName) {
+                // 알레르기 정보 제거 및 메뉴 정리
+                const cleanDishName = dishName
+                    .replace(/\([^)]*\)/g, '') // 괄호와 괄호 안 내용 제거
+                    .replace(/<br\/?>/g, '\n') // <br> 태그를 줄바꿈으로 변환
+                    .split('\n')
+                    .map(item => item.trim())
+                    .filter(item => item.length > 0);
+
+                switch (mealCode) {
+                    case '1': // 조식
+                        meals.breakfast = cleanDishName;
+                        break;
+                    case '2': // 중식
+                        meals.lunch = cleanDishName;
+                        break;
+                    case '3': // 석식
+                        meals.dinner = cleanDishName;
+                        break;
+                }
+            }
+        }
+
+        return meals;
+    }
+
+    function displayMealInfo(meals, date) {
+        hideLoading();
+        
+        // 날짜 표시 형식 변경
+        const dateObj = new Date(date);
+        const options = { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            weekday: 'long'
+        };
+        const formattedDate = dateObj.toLocaleDateString('ko-KR', options);
+        mealDateDisplay.textContent = formattedDate + ' 급식 정보';
+
+        // 각 식사별 정보 표시
+        displayMealContent('breakfast-content', meals.breakfast, '조식');
+        displayMealContent('lunch-content', meals.lunch, '중식');
+        displayMealContent('dinner-content', meals.dinner, '석식');
+
+        showResults();
+    }
+
+    function displayMealContent(containerId, mealItems, mealType) {
+        const container = document.getElementById(containerId);
+        
+        if (mealItems.length === 0) {
+            container.innerHTML = `<p>${mealType} 정보가 없습니다.</p>`;
+        } else {
+            const mealList = mealItems.map(item => `<li>${item}</li>`).join('');
+            container.innerHTML = `<ul>${mealList}</ul>`;
+        }
+    }
+
+    function showLoading() {
+        loadingDiv.classList.remove('hidden');
+    }
+
+    function hideLoading() {
+        loadingDiv.classList.add('hidden');
+    }
+
+    function showResults() {
+        mealInfoDiv.classList.remove('hidden');
+    }
+
+    function hideResults() {
+        mealInfoDiv.classList.add('hidden');
+    }
+
+    function showError() {
+        hideLoading();
+        errorDiv.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorDiv.classList.add('hidden');
     }
 });
